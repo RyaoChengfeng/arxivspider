@@ -18,19 +18,23 @@ for number in r_number_list:
     doc = doc.text
 
     # 获得论文信息
-    r_title = re.compile(r'<h1 class="title mathjax"><span class="descriptor">Title:</span>(.*?)</h1>')
-    r_title = re.findall(r_title, doc)[0]
+    r_title0 = re.compile(r'<h1 class="title mathjax"><span class="descriptor">Title:</span>(.*?)</h1>')
+    r_title = re.findall(r_title0, doc)[0]
 
-    r_author = re.compile(r'<div class="authors">(.*?)</div>')
-    r_author = re.findall(r_author, doc)[0]
-    soup = BeautifulSoup(r_author)
-    r_author = soup.a.string
+    r_author0 = re.compile(r'<div class="authors">(.*?)</div>')
+    r_author1 = re.findall(r_author0, doc)[0]
+    r_author2 = re.findall(r'<a>(.*?)</a>', r_author1)[0]
+    for r_author in r_author2:
+        r_author = r_author.replace()
 
-    r_time = re.compile(r'Submitted on (.*?)]')
-    r_time = re.findall(r_time, doc)[0]
+
+    r_time0 = re.compile(r'Submitted on (.*?)]')
+    r_time = re.findall(r_time0, doc)[0]
 
     # 将得到的数据存入数据库
     # ..........
+
+    # 控制爬取的论文量
 
 
 # 下载功能
