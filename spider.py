@@ -3,7 +3,6 @@ import requests
 import os
 from bs4 import BeautifulSoup
 import random
-import db
 
 url_arvix = "https://arxiv.org/list/cs.AI/pastweek?skip=0&show=165"
 user_agent = [
@@ -63,8 +62,6 @@ def get_number():
 # 进入论文内部爬取
 def save_msg():
 
-
-
     r_number_list = get_number()
     for number in r_number_list:
         url_doc = 'https://arxiv.org/abs/' + number
@@ -104,14 +101,6 @@ def save_msg():
 
         # 将得到的数据存入数据库
         sql = "INSERT INTO documents(number,title,author,time,subject,url_pdf) VALUES (%s,%s,%s,%s,%s,%s)" % (number_id, r_title, authors, r_time, sbj, url_pdf)
-        database.insert_sql(sql)
-        database.close_sql()
-
-
-        # 控制爬取的论文量
-        # i = 0
-        # if i = n:
-        #     break
 
 
 # 下载功能
@@ -138,5 +127,3 @@ def get_all_doc():
         download_all_pdf(url_pdf, number)
 
 
-if __name__ == '__main__':
-    save_msg()
