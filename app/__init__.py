@@ -7,7 +7,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
 
     app.config.from_mapping(
-        SECRET_KEY=b'_5#y2L"F4Q8z\n\xec]/',
+        SECRET_KEY='_5#y2L"F4Q8z\n\xec]/',
     )
 
     if test_config is None:
@@ -22,5 +22,3 @@ def create_app(test_config=None):
     app.register_blueprint(bp)
 
     return app
-
-

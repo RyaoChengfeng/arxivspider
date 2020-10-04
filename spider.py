@@ -3,9 +3,6 @@ import requests
 import os
 from bs4 import BeautifulSoup
 import random
-from db import get_db
-from flask import g, flash, render_template
-import pymysql
 
 url_arvix = "https://arxiv.org/list/cs.AI/pastweek?skip=0&show=165"
 user_agent = [

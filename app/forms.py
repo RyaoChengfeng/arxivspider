@@ -5,4 +5,4 @@ from wtforms.validators import DataRequired
 
 class LoginForm(FlaskForm):
     key_words = StringField('tap in key words', validators=[DataRequired()])
-    search = SubmitField['Search']
+    search = StringField('Search', validators=[DataRequired()])
