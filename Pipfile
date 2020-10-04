@@ -13,6 +13,7 @@ flask-wtf = "*"
 pymysql = "*"
 lxml = "*"
 flask-sqlalchemy = "*"
+flask-script = "*"
 
 [requires]
 python_version = "3.8"

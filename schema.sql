@@ -1,5 +1,5 @@
+USE bingyanproject0;
 DROP TABLE IF EXISTS documents;
-
 CREATE TABLE documents(
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL ,

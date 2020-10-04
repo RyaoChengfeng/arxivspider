@@ -3,6 +3,9 @@ import requests
 import os
 from bs4 import BeautifulSoup
 import random
+from db import get_db
+from flask import g, flash, render_template
+import pymysql
 
 url_arvix = "https://arxiv.org/list/cs.AI/pastweek?skip=0&show=165"
 user_agent = [
@@ -60,10 +63,11 @@ def get_number():
 
 
 # 进入论文内部爬取
-def save_msg():
-
+def get_msg():
+    messages = []  # 总数据
+    _ = 1
     r_number_list = get_number()
-    for number in r_number_list:
+    for number in r_number_list[8:20]:
         url_doc = 'https://arxiv.org/abs/' + number
         doc = requests.get(url_doc, headers=headers)
         doc = doc.text
@@ -86,7 +90,7 @@ def save_msg():
         authors = ''
         for author in author_list:
             author = author.string
-            if author == author_list[0]:
+            if author == author_list[0].string:
                 authors = author
             else:
                 authors = authors + ',' + author
@@ -99,8 +103,10 @@ def save_msg():
         # 下载地址
         url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
 
-        # 将得到的数据存入数据库
-        sql = "INSERT INTO documents(number,title,author,time,subject,url_pdf) VALUES (%s,%s,%s,%s,%s,%s)" % (number_id, r_title, authors, r_time, sbj, url_pdf)
+        messages.append((r_title, number_id, authors, r_time, sbj, url_pdf))
+
+    print('爬取完成')
+    return messages
 
 
 # 下载功能

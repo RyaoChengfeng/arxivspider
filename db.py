@@ -8,6 +8,7 @@ def init_db():
     db = get_db()
     with current_app.open_resouce("schema.sql") as f:
         db.executescript(f.read().decode("utf8"))
+        # 执行数据库语句
 
 
 def get_db():

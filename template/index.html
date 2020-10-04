@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>>Paper Index Tool</title>
+    </head>
+    <body>
+        <h1>论文检索工具</h1>
+        <hr>
+        <div>
+            <form action="" method="post">
+                <input type="submit" value="Start Spider" name="start" style="width: 90px;height: 50px">
+            </form>
+            <form action="" method="post">
+                <label for="search">Search by title</label>
+                <input type="text" name="key_words" id="search" style="width: 420px;height: 30px "/>
+                <input type="submit" value="提交">
+            </form>
+        </div>
+        <hr>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+                {{ messages }}
+            </ul>
+        {% endif %}
+    </body>
+</html>
+
+
+
