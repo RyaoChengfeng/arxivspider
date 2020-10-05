@@ -3,6 +3,7 @@ from flask import request, flash, render_template, redirect, url_for
 import spider
 import pymysql
 from flask import Flask
+# from pymysql.constants import CLIENT
 
 # import os
 # from flask_script import Shell
@@ -38,6 +39,13 @@ def index():
                     flash('数据写入失败!', e)
                     db.rollback()
                 flash('完成')
+        if request.form['Initialized the database']:
+            try:
+                init_db()
+            except Exception:
+                flash('初始化失败')
+            else:
+                flash('数据库已初始化')
     return render_template('index.html')
 
 
@@ -82,5 +90,36 @@ def search():
     return render_template('search.html', results=results)
 
 
+#  初始化数据库
+def init_db():
+    db = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='liaocfe',
+        port=3306,
+        db='bingyanProject0',
+    )
+    cursor = db.cursor()
+    try:
+        sql1 ='DROP TABLE IF EXISTS documents;'
+        sql2 = """CREATE TABLE documents(
+            id INTEGER PRIMARY KEY AUTO_INCREMENT,
+            title VARCHAR(255) NOT NULL ,
+            number VARCHAR(255) NOT NULL ,
+            author VARCHAR(255) NOT NULL ,
+            time VARCHAR(255) NOT NULL ,
+            subject VARCHAR(255) NOT NULL ,
+            url_pdf VARCHAR(255)
+        );"""
+        cursor.execute(sql1)
+        cursor.execute(sql2)
+        db.close()
+    except Exception:
+        print('初始化失败！')
+    else:
+        print('数据库已初始化！')
+
+
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True)

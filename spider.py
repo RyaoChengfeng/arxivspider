@@ -55,23 +55,26 @@ headers = {'User-Agent': random.choice(user_agent)}
 
 # 获取每个论文代号
 def get_number():
-    for year in years:
-        url_arvix0 = "https://arxiv.org/list/cs.AI/" + year
-        page0 = requests.get(url_arvix0, headers=headers)
-        html0 = page0.text
-        total0 = re.compile(r'total of (/d+) entries:')
-        total = re.findall(total0, html0)[0]
-        start = 0
-        r_number_list = []
-        for _ in range((int(total) // 2000) + 1):
-            url_arvix = "https://arxiv.org/list/cs.AI/" + year + "?skip=" + str(start) + "&show=2000"
-            start += 2000
-            page = requests.get(url_arvix, headers=headers)
-            html = page.text
-            r_number = re.compile(r'<a href="/abs/(.*?)" title="Abstract">')
-            r_number_list0 = re.findall(r_number, html)
-            r_number_list += r_number_list0
-        return r_number_list
+    # for year in years:
+    year = '20'
+    url_arvix0 = "https://arxiv.org/list/cs.AI/" + year
+    page0 = requests.get(url_arvix0, headers=headers)
+    html0 = page0.text
+    total0 = re.compile(r'total of (.*?) entries:')
+    total = re.findall(total0, html0)[0]
+    print(total)
+    start = 0
+    r_number_list = []
+    for _ in range((int(total) // 2000) + 1):
+        url_arvix = "https://arxiv.org/list/cs.AI/" + year + "?skip=" + str(start) + "&show=2000"
+        start += 2000
+        page = requests.get(url_arvix, headers=headers)
+        html = page.text
+        r_number = re.compile(r'<a href="/abs/(.*?)" title="Abstract">')
+        r_number_list0 = re.findall(r_number, html)
+        r_number_list += r_number_list0
+        print(r_number_list)
+    return r_number_list
 
 
 # 进入论文内部爬取
