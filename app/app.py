@@ -42,12 +42,13 @@ def index():
     return render_template('index.html')
 
 
-# 索引(有错误)
+# 索引
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     results = []
     if request.method == 'POST':
         key_words = request.form['key_words']
+        key_numbers = request.form['key_nembers']
         db = pymysql.connect(
             host='localhost',
             user='root',
@@ -56,9 +57,15 @@ def search():
             db='bingyanProject0'
         )
         cursor = db.cursor()
-        sql = "SELECT title FROM documents WHERE title LIKE '%" + str(key_words) + "%';"
-        cursor.execute(sql)
-        results = cursor.fetchone()
+        if key_words:
+            sql = "SELECT title FROM documents WHERE title LIKE '%" + str(key_words) + "%';"
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        if key_numbers:
+            sql = "SELECT title FROM documents WHERE title LIKE '%" + str(key_numbers) + "%';"
+            cursor.execute(sql)
+        results = cursor.fetchall()
+        db.close()
         results = list(results)
         if not results[0]:
             flash('没有找到对应的论文！')
