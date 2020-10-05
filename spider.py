@@ -4,7 +4,10 @@ import os
 from bs4 import BeautifulSoup
 import random
 
-url_arvix = "https://arxiv.org/list/cs.AI/pastweek?skip=0&show=165"
+# 如果爬全部的论文就加上循环结构
+years = ['20', '19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '09', '08', '07', '06', '05', '04', '03',
+         '02', '01', '00', '99', '98', '97', '96', '95', '94', '93']
+
 user_agent = [
     "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
     "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
@@ -52,11 +55,23 @@ headers = {'User-Agent': random.choice(user_agent)}
 
 # 获取每个论文代号
 def get_number():
-    page = requests.get(url_arvix, headers=headers)
-    html = page.text
-    r_number = re.compile(r'<a href="/abs/(.*?)" title="Abstract">')
-    r_number_list = re.findall(r_number, html)
-    return r_number_list
+    for year in years:
+        url_arvix0 = "https://arxiv.org/list/cs.AI/" + year
+        page0 = requests.get(url_arvix0, headers=headers)
+        html0 = page0.text
+        total0 = re.compile(r'total of (/d+) entries:')
+        total = re.findall(total0, html0)[0]
+        start = 0
+        r_number_list = []
+        for _ in range((int(total) // 2000) + 1):
+            url_arvix = "https://arxiv.org/list/cs.AI/" + year + "?skip=" + str(start) + "&show=2000"
+            start += 2000
+            page = requests.get(url_arvix, headers=headers)
+            html = page.text
+            r_number = re.compile(r'<a href="/abs/(.*?)" title="Abstract">')
+            r_number_list0 = re.findall(r_number, html)
+            r_number_list += r_number_list0
+        return r_number_list
 
 
 # 进入论文内部爬取

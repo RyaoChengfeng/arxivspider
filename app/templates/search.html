@@ -7,12 +7,24 @@
         <h1>Search Documents</h1>
         <hr>
         <form action="" method="post">
-            <label for="search">Search by title</label>
-            <input type="text" name="key_words" id="search" style="width: 420px;height: 30px " required/>
+            <label for="search">Global Search(速度较慢)</label>
+            <input type="text" name="key" id="search" style="width: 420px;height: 30px "/>
+            <input type="submit" value="提交">
+            <br><br>
+            <label for="title_search">Search by title</label>
+            <input type="text" name="key_words" id="title_search" style="width: 420px;height: 30px "/>
             <input type="submit" value="提交">
             <br><br>
             <label for="id_search">Search by number</label>
-            <input type="text" name="key_numbers" id="id_search" style="width: 420px;height: 30px " required/>
+            <input type="text" name="key_numbers" id="id_search" style="width: 420px;height: 30px "/>
+            <input type="submit" value="提交">
+            <br><br>
+            <label for="time_search">Search by time(格式例如：30 Sep 2020)</label>
+            <input type="text" name="key_time" id="time_search" style="width: 420px;height: 30px "/>
+            <input type="submit" value="提交">
+            <br><br>
+            <label for="author_search">Search by author</label>
+            <input type="text" name="key_author" id="author_search" style="width: 420px;height: 30px "/>
             <input type="submit" value="提交">
         </form>
         <br>

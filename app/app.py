@@ -13,7 +13,7 @@ app.config.from_mapping(
 )
 
 
-# 初始界面
+# 初始界面:开始爬虫、进入索引界面
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -31,7 +31,6 @@ def index():
             cursor = db.cursor()
             for message in messages:
                 sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES" + str(message) + ";"
-                flash("正在写入数据 %s" % message[1])
                 try:
                     cursor.execute(sql)
                     db.commit()
@@ -47,8 +46,11 @@ def index():
 def search():
     results = []
     if request.method == 'POST':
+        key = request.form['key']
         key_words = request.form['key_words']
-        key_numbers = request.form['key_nembers']
+        key_numbers = request.form['key_numbers']
+        key_time = request.form['key_time']
+        key_author = request.form['key_author']
         db = pymysql.connect(
             host='localhost',
             user='root',
@@ -57,19 +59,26 @@ def search():
             db='bingyanProject0'
         )
         cursor = db.cursor()
+        sql = ''
+        if key:
+            sql = "SELECT * FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(key) + "%';"
         if key_words:
-            sql = "SELECT title FROM documents WHERE title LIKE '%" + str(key_words) + "%';"
+            sql = "SELECT * FROM documents WHERE title LIKE '%" + str(key_words) + "%';"
+        if key_numbers:
+            sql = "SELECT * FROM documents WHERE number LIKE '%" + str(key_numbers) + "%';"
+        if key_time:
+            sql = "SELECT * FROM documents WHERE time LIKE '%" + str(key_time) + "%';"
+        if key_author:
+            sql = "SELECT * FROM documents WHERE author LIKE '%" + str(key_author) + "%';"
+        if sql:
             cursor.execute(sql)
             results = cursor.fetchall()
-        if key_numbers:
-            sql = "SELECT title FROM documents WHERE title LIKE '%" + str(key_numbers) + "%';"
-            cursor.execute(sql)
-        results = cursor.fetchall()
+            results = list(results)
+            if not results:
+                flash('没有找到对应的论文！')
+        else:
+            flash('请输入关键字！')
         db.close()
-        results = list(results)
-        if not results[0]:
-            flash('没有找到对应的论文！')
-            redirect(url_for('index'))
     return render_template('search.html', results=results)
 
 
