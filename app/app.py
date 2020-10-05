@@ -1,10 +1,17 @@
-from flask import request, flash, render_template, redirect, url_for
-# from db import get_db
+# 功能：
+# 开始爬虫
+# 初始化数据库
+# 全局搜索，按标题、序号、作者、时间搜索数据库并返回相关的信息
+
+from flask import request, flash, render_template, g, redirect, url_for
 import spider
 import pymysql
 from flask import Flask
-# from pymysql.constants import CLIENT
+import time
+import datetime
 
+# from pymysql.constants import CLIENT
+# from db import get_db
 # import os
 # from flask_script import Shell
 
@@ -19,7 +26,6 @@ app.config.from_mapping(
 def index():
     if request.method == 'POST':
         if request.form['start']:
-            spider.get_number()
             messages = spider.get_msg()
             flash('爬取完成')
             db = pymysql.connect(
@@ -27,7 +33,7 @@ def index():
                 user='root',
                 password='liaocfe',
                 port=3306,
-                db='bingyanProject0'
+                db='bingyanProject0',
             )
             cursor = db.cursor()
             for message in messages:
@@ -42,8 +48,9 @@ def index():
         if request.form['Initialized the database']:
             try:
                 init_db()
-            except Exception:
+            except Exception as e:
                 flash('初始化失败')
+                print(e)
             else:
                 flash('数据库已初始化')
     return render_template('index.html')
@@ -64,14 +71,14 @@ def search():
             user='root',
             password='liaocfe',
             port=3306,
-            db='bingyanProject0'
+            db='bingyanProject0',
         )
         cursor = db.cursor()
         sql = ''
         if key:
             sql = "SELECT * FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(key) + "%';"
         if key_words:
-            sql = "SELECT * FROM documents WHERE title LIKE '%" + str(key_words) + "%';"
+            sql = "SELECT * FROM documents WHERE title LIKE '%" + str(key_words.lower().title()) + "%';"
         if key_numbers:
             sql = "SELECT * FROM documents WHERE number LIKE '%" + str(key_numbers) + "%';"
         if key_time:
@@ -101,7 +108,7 @@ def init_db():
     )
     cursor = db.cursor()
     try:
-        sql1 ='DROP TABLE IF EXISTS documents;'
+        sql1 = 'DROP TABLE IF EXISTS documents;'
         sql2 = """CREATE TABLE documents(
             id INTEGER PRIMARY KEY AUTO_INCREMENT,
             title VARCHAR(255) NOT NULL ,
@@ -114,10 +121,25 @@ def init_db():
         cursor.execute(sql1)
         cursor.execute(sql2)
         db.close()
-    except Exception:
+    except Exception as e:
         print('初始化失败！')
+        print(e)
     else:
         print('数据库已初始化！')
+
+
+# 定时爬取,可设置时和分
+def sched_start(h, m):
+    now = datetime.datetime.now()
+    if h and m:
+        sched_time = datetime.datetime(now.year, now.month, now.day, h, m, now.second)
+    else:
+        sched_time = datetime.datetime.now() + datetime.timedelta(days=1)
+    while True:
+        if time.mktime(now.timetuple()) > time.mktime(sched_time.timetuple()):
+            sched_time += datetime.timedelta(days=1)
+            spider.get_msg()
+        time.sleep(600)  # 每10分钟检测一次
 
 
 if __name__ == '__main__':

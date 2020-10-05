@@ -1,8 +1,18 @@
+# 功能：
+# 爬取arvix论文的标题、序号、作者、时间、分类、下载链接
+# 下载arivx论文
+# 爬虫定时爬取
+# 爬虫增量爬取
+# 超时重试、跳过
+
+
 import re
 import requests
 import os
 from bs4 import BeautifulSoup
 import random
+
+from requests.adapters import HTTPAdapter
 
 # 如果爬全部的论文就加上循环结构
 years = ['20', '19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '09', '08', '07', '06', '05', '04', '03',
@@ -65,7 +75,7 @@ def get_number():
     print(total)
     start = 0
     r_number_list = []
-    for _ in range((int(total) // 2000) + 1):
+    for _ in range((int(total) // 2000) + 1):  # 爬取该年份的所有论文
         url_arvix = "https://arxiv.org/list/cs.AI/" + year + "?skip=" + str(start) + "&show=2000"
         start += 2000
         page = requests.get(url_arvix, headers=headers)
@@ -78,13 +88,28 @@ def get_number():
 
 
 # 进入论文内部爬取
+# ps:表示首页不会显示时间信息，要爬就要进论文里面。但这样一来花的时间就大大增加了，原谅我目前没时间看分布式爬虫
+
 def get_msg():
     messages = []  # 总数据
     r_number_list = get_number()
     for number in r_number_list:
         url_doc = 'https://arxiv.org/abs/' + number
-        doc = requests.get(url_doc, headers=headers)
-        doc = doc.text
+        # 超时重试3次
+        i = 0
+        while i < 3:
+            try:
+                doc = requests.get(url_doc, headers=headers, timeout=5)  # 设置超时
+            except requests.exceptions.RequestException as e:
+                i += 1
+                print('重试 %s' % url_doc)
+            else:
+                doc = doc.text
+                break
+        if i == 3:
+            print(print('%s 访问失败！' % url_doc))
+            print(e)
+            continue
 
         # 论文序号
         number_id = 'arXiv:' + number
@@ -145,6 +170,11 @@ def get_all_doc():
         url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
         print('开始下载论文：arXiv:%s' % number)
         download_all_pdf(url_pdf, number)
+
+# 判断url是否之前被爬取过
+# def add_url(number):
+
+
 
 
 if __name__ == '__main__':
