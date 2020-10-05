@@ -62,9 +62,8 @@ def get_number():
 # 进入论文内部爬取
 def get_msg():
     messages = []  # 总数据
-    _ = 1
     r_number_list = get_number()
-    for number in r_number_list[8:20]:
+    for number in r_number_list:
         url_doc = 'https://arxiv.org/abs/' + number
         doc = requests.get(url_doc, headers=headers)
         doc = doc.text
@@ -130,3 +129,5 @@ def get_all_doc():
         download_all_pdf(url_pdf, number)
 
 
+if __name__ == '__main__':
+    get_all_doc()

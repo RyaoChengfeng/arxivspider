@@ -1,3 +1,5 @@
+# 目前用不上
+
 import pymysql
 import click
 from flask import current_app, g

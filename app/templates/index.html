@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>>Paper Index Tool</title>
+    </head>
+    <body>
+        <h1>论文检索工具</h1>
+        <hr>
+        <form action="" method="post">
+            <input type="submit" value="Start Spider" name="start" style="width: 90px;height: 50px">
+        </form>
+        <div>
+            <p><a href="{{ url_for('search') }}">Search</a></p>
+            <hr>
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                <ul class=flashes>
+                    {{ message }}
+                </ul>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+    </body>
+</html>
+
+
+

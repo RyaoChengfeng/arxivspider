@@ -1,3 +1,5 @@
+# 目前用不上
+
 USE bingyanproject0;
 DROP TABLE IF EXISTS documents;
 CREATE TABLE documents(
