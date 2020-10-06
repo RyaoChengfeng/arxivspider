@@ -8,9 +8,12 @@
         <h1>论文检索工具</h1>
         <hr>
         <form method="post">
-            {{ form.start() }}<br>
-            {{ form.init_db() }}<br>
-            {{ form.sched_start }}
+            {{ form.start(class='btn btn-primary') }}<br>
+            {{ form.init_db(class='btn btn-primary') }}<br>
+            {{ form.hour.label }}{{ form.hour(class='form-control') }}<br>
+            {{ form.minute.label }}{{ form.minute(class='form-control') }}<br>
+            {{ form.sched_start(class='btn btn-primary') }}
+            {{ form.stop_start(class='btn btn-primary') }}
         </form>
         <div>
             <p><a href="{{ url_for('search') }}">Search</a></p>

@@ -15,6 +15,7 @@ lxml = "*"
 flask-sqlalchemy = "*"
 flask-script = "*"
 retrying = "*"
+aiohttp = "*"
 
 [requires]
 python_version = "3.8"

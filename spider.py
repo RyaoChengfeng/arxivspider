@@ -12,6 +12,7 @@ import os
 from bs4 import BeautifulSoup
 import random
 import pymysql
+import asyncio
 
 # import hashlib
 # from requests.adapters import HTTPAdapter
@@ -93,13 +94,20 @@ def get_number():
 # ps:表示首页不会显示时间信息，要爬就要进论文里面。但这样一来花的时间就大大增加了，原谅我目前没时间看分布式爬虫
 
 def get_msg():
-    messages = []  # 总数据
     r_number_list = get_number()
+    db = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='liaocfe',
+        port=3306,
+        db='bingyanProject0',
+    )
+    cursor = db.cursor()
     for number in r_number_list:
 
         # 判断是否爬过链接
-        if not compare_url(number):
-            print('论文 arXiv:'+number+'已存在')
+        if compare_url(number):
+            print('论文 arXiv:' + number + '已存在')
             continue
 
         url_doc = 'https://arxiv.org/abs/' + number
@@ -151,10 +159,19 @@ def get_msg():
         # 下载地址
         url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
 
-        messages.append((r_title, number_id, authors, r_time, sbj, url_pdf))
-
-    print('爬取完成')
-    return messages
+        # 插入数据库
+        F = False
+        sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES('" + \
+              r_title + "','" + number_id + "','" + authors + "','" + r_time + "','" + sbj + "','" + url_pdf + "');"
+        try:
+            cursor.execute(sql)
+            db.commit()
+        except Exception as e:
+            print('数据写入失败!', e)
+            db.rollback()
+            F = True
+    db.close()
+    return F
 
 
 # 下载功能

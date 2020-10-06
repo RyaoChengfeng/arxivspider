@@ -9,7 +9,7 @@ import pymysql
 from flask import Flask
 import time
 import datetime
-from forms import Form
+from forms import IndexForm
 
 # from pymysql.constants import CLIENT
 # from db import get_db
@@ -25,35 +25,33 @@ app.config.from_mapping(
 # 初始界面:开始爬虫、进入索引界面
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    form = Form()
-    i = False
+    form = IndexForm()
+    i = False  # 反馈爬虫执行情况
     if request.method == 'POST':
-        if form.start.data:
-            messages = spider.get_msg()
+        # 整个是用来判断执行哪一个语句
+        F = False  # 反馈数据库执行情况
+
+        if form.start.data:  # 表单
+            F = spider.get_msg()
             i = True
-        if form.sched_start.data:
-            messages = sched_start()
+        if form.stop_start.data:
+            sched_start(stop=True)
+            flash('已停止自动爬取')
+        if form.sched_start.data:  # 表单
+            hour = request.form['hour']
+            minute = request.form['minute']
+            if hour and minute:
+                F = sched_start(h=int(hour), m=int(minute))
+            else:
+                F = sched_start()
             i = True
+
         if i:
             flash('爬取完成')
-            for message in messages:
-                sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES" + str(message) + ";"
-                db = pymysql.connect(
-                    host='localhost',
-                    user='root',
-                    password='liaocfe',
-                    port=3306,
-                    db='bingyanProject0',
-                )
-                cursor = db.cursor()
-                try:
-                    cursor.execute(sql)
-                    db.commit()
-                except Exception as e:
-                    flash('数据写入失败!', e)
-                    db.rollback()
-                flash('完成')
-        if form.init_db.data:
+        if F:
+            flash('数据写入失败!')
+
+        if form.init_db.data:  # 表单
             try:
                 init_db()
             except Exception as e:
@@ -85,18 +83,19 @@ def search():
         cursor = db.cursor()
         sql = ''
         if key:
-            sql = "SELECT title,number,time,author,subject FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(
+            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(
                 key) + "%';"
         if key_words:
-            sql = "SELECT title,number,time,author,subject FROM documents WHERE title LIKE '%" + str(
+            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE title LIKE '%" + str(
                 key_words.lower().title()) + "%';"
         if key_numbers:
-            sql = "SELECT title,number,time,author,subject FROM documents WHERE number LIKE '%" + str(
+            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE number LIKE '%" + str(
                 key_numbers) + "%';"
         if key_time:
-            sql = "SELECT title,number,time,author,subject FROM documents WHERE time LIKE '%" + str(key_time) + "%';"
+            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE time LIKE '%" + str(
+                key_time) + "%';"
         if key_author:
-            sql = "SELECT title,number,time,author,subject FROM documents WHERE author LIKE '%" + str(
+            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE author LIKE '%" + str(
                 key_author) + "%';"
         if sql:
             cursor.execute(sql)
@@ -142,8 +141,10 @@ def init_db():
 
 
 # 定时爬取,可设置时和分
-def sched_start(h=None, m=None):
+def sched_start(h=None, m=None,stop=False):
     while True:
+        if stop:
+            break
         now = datetime.datetime.now()
         if h and m:
             sched_time = datetime.datetime(now.year, now.month, now.day, h, m, now.second)
@@ -152,10 +153,9 @@ def sched_start(h=None, m=None):
 
         if time.mktime(now.timetuple()) > time.mktime(sched_time.timetuple()):
             sched_time += datetime.timedelta(days=1)
-            messages = spider.get_msg()  # 执行爬虫
-            return messages
-        else:
-            pass
+            F = spider.get_msg()  # 执行爬虫
+            return F
+
         time.sleep(600)  # 每10分钟检测一次
 
 
