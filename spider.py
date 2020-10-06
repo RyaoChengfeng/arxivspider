@@ -182,7 +182,7 @@ def get_all_doc():
 
 
 # 判断url是否之前被爬取过
-# 观察到无论上传几次，论文id都不会变，所以没必要用哈希来解析内容
+# 观察到无论上传几次，论文id都不会变，所以没必要用哈希来解析内，容
 def compare_url(number):
     sql = "SELECT number FROM documents WHERE number='" + number + "'"
     db = pymysql.connect(

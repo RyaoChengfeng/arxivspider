@@ -4,11 +4,13 @@
         <title>>Paper Index Tool</title>
     </head>
     <body>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <h1>论文检索工具</h1>
         <hr>
-        <form action="" method="post">
-            <input type="submit" value="Start Spider" name="start" style="width: 90px;height: 50px"><br>
-            <input type="submit" value="初始化数据库" name="Initialized the database" style="width: 90px;height: 50px">
+        <form method="post">
+            {{ form.start() }}<br>
+            {{ form.init_db() }}<br>
+            {{ form.sched_start }}
         </form>
         <div>
             <p><a href="{{ url_for('search') }}">Search</a></p>

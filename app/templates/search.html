@@ -4,7 +4,8 @@
         <title>Search Documents</title>
     </head>
     <body>
-        <h1>Search Documents</h1>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <h1><a href="{{ url_for('index') }}">Search Documents</a></h1>
         <hr>
         <form action="" method="post">
             <label for="search">Global Search(速度较慢)</label>

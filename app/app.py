@@ -9,6 +9,7 @@ import pymysql
 from flask import Flask
 import time
 import datetime
+from forms import Form
 
 # from pymysql.constants import CLIENT
 # from db import get_db
@@ -24,9 +25,16 @@ app.config.from_mapping(
 # 初始界面:开始爬虫、进入索引界面
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    form = Form()
+    i = False
     if request.method == 'POST':
-        if request.form['start']:
+        if form.start.data:
+            messages = spider.get_msg()
+            i = True
+        if form.sched_start.data:
             messages = sched_start()
+            i = True
+        if i:
             flash('爬取完成')
             for message in messages:
                 sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES" + str(message) + ";"
@@ -45,7 +53,7 @@ def index():
                     flash('数据写入失败!', e)
                     db.rollback()
                 flash('完成')
-        if request.form['Initialized the database']:
+        if form.init_db.data:
             try:
                 init_db()
             except Exception as e:
@@ -53,7 +61,8 @@ def index():
                 print(e)
             else:
                 flash('数据库已初始化')
-    return render_template('index.html')
+
+    return render_template('index.html', form=form)
 
 
 # 索引
@@ -76,15 +85,19 @@ def search():
         cursor = db.cursor()
         sql = ''
         if key:
-            sql = "SELECT * FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(key) + "%';"
+            sql = "SELECT title,number,time,author,subject FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(
+                key) + "%';"
         if key_words:
-            sql = "SELECT * FROM documents WHERE title LIKE '%" + str(key_words.lower().title()) + "%';"
+            sql = "SELECT title,number,time,author,subject FROM documents WHERE title LIKE '%" + str(
+                key_words.lower().title()) + "%';"
         if key_numbers:
-            sql = "SELECT * FROM documents WHERE number LIKE '%" + str(key_numbers) + "%';"
+            sql = "SELECT title,number,time,author,subject FROM documents WHERE number LIKE '%" + str(
+                key_numbers) + "%';"
         if key_time:
-            sql = "SELECT * FROM documents WHERE time LIKE '%" + str(key_time) + "%';"
+            sql = "SELECT title,number,time,author,subject FROM documents WHERE time LIKE '%" + str(key_time) + "%';"
         if key_author:
-            sql = "SELECT * FROM documents WHERE author LIKE '%" + str(key_author) + "%';"
+            sql = "SELECT title,number,time,author,subject FROM documents WHERE author LIKE '%" + str(
+                key_author) + "%';"
         if sql:
             cursor.execute(sql)
             results = cursor.fetchall()
@@ -139,7 +152,7 @@ def sched_start(h=None, m=None):
 
         if time.mktime(now.timetuple()) > time.mktime(sched_time.timetuple()):
             sched_time += datetime.timedelta(days=1)
-            messages = spider.get_msg() #执行爬虫
+            messages = spider.get_msg()  # 执行爬虫
             return messages
         else:
             pass
