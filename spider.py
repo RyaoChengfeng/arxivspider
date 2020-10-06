@@ -11,8 +11,10 @@ import requests
 import os
 from bs4 import BeautifulSoup
 import random
+import pymysql
 
-from requests.adapters import HTTPAdapter
+# import hashlib
+# from requests.adapters import HTTPAdapter
 
 # 如果爬全部的论文就加上循环结构
 years = ['20', '19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '09', '08', '07', '06', '05', '04', '03',
@@ -94,6 +96,12 @@ def get_msg():
     messages = []  # 总数据
     r_number_list = get_number()
     for number in r_number_list:
+
+        # 判断是否爬过链接
+        if not compare_url(number):
+            print('论文 arXiv:'+number+'已存在')
+            continue
+
         url_doc = 'https://arxiv.org/abs/' + number
         # 超时重试3次
         i = 0
@@ -106,6 +114,7 @@ def get_msg():
             else:
                 doc = doc.text
                 break
+
         if i == 3:
             print(print('%s 访问失败！' % url_doc))
             print(e)
@@ -171,10 +180,22 @@ def get_all_doc():
         print('开始下载论文：arXiv:%s' % number)
         download_all_pdf(url_pdf, number)
 
+
 # 判断url是否之前被爬取过
-# def add_url(number):
-
-
+# 观察到无论上传几次，论文id都不会变，所以没必要用哈希来解析内容
+def compare_url(number):
+    sql = "SELECT number FROM documents WHERE number='" + number + "'"
+    db = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='liaocfe',
+        port=3306,
+        db='bingyanProject0',
+    )
+    cursor = db.cursor()
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    return result
 
 
 if __name__ == '__main__':

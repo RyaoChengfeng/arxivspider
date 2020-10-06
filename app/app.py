@@ -26,18 +26,18 @@ app.config.from_mapping(
 def index():
     if request.method == 'POST':
         if request.form['start']:
-            messages = spider.get_msg()
+            messages = sched_start()
             flash('爬取完成')
-            db = pymysql.connect(
-                host='localhost',
-                user='root',
-                password='liaocfe',
-                port=3306,
-                db='bingyanProject0',
-            )
-            cursor = db.cursor()
             for message in messages:
                 sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES" + str(message) + ";"
+                db = pymysql.connect(
+                    host='localhost',
+                    user='root',
+                    password='liaocfe',
+                    port=3306,
+                    db='bingyanProject0',
+                )
+                cursor = db.cursor()
                 try:
                     cursor.execute(sql)
                     db.commit()
@@ -129,19 +129,22 @@ def init_db():
 
 
 # 定时爬取,可设置时和分
-def sched_start(h, m):
-    now = datetime.datetime.now()
-    if h and m:
-        sched_time = datetime.datetime(now.year, now.month, now.day, h, m, now.second)
-    else:
-        sched_time = datetime.datetime.now() + datetime.timedelta(days=1)
+def sched_start(h=None, m=None):
     while True:
+        now = datetime.datetime.now()
+        if h and m:
+            sched_time = datetime.datetime(now.year, now.month, now.day, h, m, now.second)
+        else:
+            sched_time = datetime.datetime.now() + datetime.timedelta(days=1)
+
         if time.mktime(now.timetuple()) > time.mktime(sched_time.timetuple()):
             sched_time += datetime.timedelta(days=1)
-            spider.get_msg()
+            messages = spider.get_msg() #执行爬虫
+            return messages
+        else:
+            pass
         time.sleep(600)  # 每10分钟检测一次
 
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
