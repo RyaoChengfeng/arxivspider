@@ -12,7 +12,7 @@ import os
 from bs4 import BeautifulSoup
 import random
 import pymysql
-import asyncio
+from spider.agent_ip import get_ip
 
 # import hashlib
 # from requests.adapters import HTTPAdapter
@@ -20,6 +20,8 @@ import asyncio
 # 如果爬全部的论文就加上循环结构
 years = ['20', '19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '09', '08', '07', '06', '05', '04', '03',
          '02', '01', '00', '99', '98', '97', '96', '95', '94', '93']
+
+agent_url = 'http://www.66ip.cn/'
 
 user_agent = [
     "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
@@ -65,6 +67,8 @@ user_agent = [
 
 headers = {'User-Agent': random.choice(user_agent)}
 
+proxies = get_ip(agent_url, headers=headers)
+
 
 # 获取每个论文代号
 def get_number():
@@ -73,6 +77,7 @@ def get_number():
     url_arvix0 = "https://arxiv.org/list/cs.AI/" + year
     page0 = requests.get(url_arvix0, headers=headers)
     html0 = page0.text
+    print(html0)
     total0 = re.compile(r'total of (.*?) entries:')
     total = re.findall(total0, html0)[0]
     print(total)
@@ -91,10 +96,8 @@ def get_number():
 
 
 # 进入论文内部爬取
-# ps:表示首页不会显示时间信息，要爬就要进论文里面。但这样一来花的时间就大大增加了，原谅我目前没时间看分布式爬虫
-
-def get_msg():
-    r_number_list = get_number()
+# ps:表示首页不会显示时间信息，要爬就要进论文里面。但这样一来花的时间就大大增加了.
+def get_msg(number):
     db = pymysql.connect(
         host='localhost',
         user='root',
@@ -103,13 +106,13 @@ def get_msg():
         db='bingyanProject0',
     )
     cursor = db.cursor()
-    for number in r_number_list:
-
-        # 判断是否爬过链接
-        if compare_url(number):
-            print('论文 arXiv:' + number + '已存在')
-            continue
-
+    # 论文序号
+    number_id = 'arXiv:' + number
+    i = compare_url(number_id)
+    if i:
+        print('论文 arXiv:' + number + '已存在')
+        return None
+    else:
         url_doc = 'https://arxiv.org/abs/' + number
         # 超时重试3次
         i = 0
@@ -126,10 +129,7 @@ def get_msg():
         if i == 3:
             print(print('%s 访问失败！' % url_doc))
             print(e)
-            continue
-
-        # 论文序号
-        number_id = 'arXiv:' + number
+            return None
 
         # 信息提示
         print('正在爬取论文: %s' % number_id)
@@ -160,25 +160,23 @@ def get_msg():
         url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
 
         # 插入数据库
-        F = False
         sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES('" + \
               r_title + "','" + number_id + "','" + authors + "','" + r_time + "','" + sbj + "','" + url_pdf + "');"
         try:
             cursor.execute(sql)
             db.commit()
+            print("数据写入成功")
         except Exception as e:
             print('数据写入失败!', e)
             db.rollback()
-            F = True
     db.close()
-    return F
 
 
 # 下载功能
 def download_all_pdf(url, number):
     pdf_file = requests.get(url, headers=headers, stream=True)
     # stream=True保持流的开启,直到流的关闭
-    file_dir = 'Artificial Intelligence'
+    file_dir = '../Artificial Intelligence'
     pdf_name = number + '.pdf'
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
@@ -190,18 +188,16 @@ def download_all_pdf(url, number):
 
 
 # 下载各论文到Artificial Intelligence
-def get_all_doc():
-    r_number_list = get_number()
-    for number in r_number_list:
-        url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
-        print('开始下载论文：arXiv:%s' % number)
-        download_all_pdf(url_pdf, number)
+def get_all_doc(number):
+    url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
+    print('开始下载论文：arXiv:%s' % number)
+    download_all_pdf(url_pdf, number)
 
 
 # 判断url是否之前被爬取过
-# 观察到无论上传几次，论文id都不会变，所以没必要用哈希来解析内，容
-def compare_url(number):
-    sql = "SELECT number FROM documents WHERE number='" + number + "'"
+# 观察到无论上传几次，论文id都不会变，所以没必要用哈希来解析内容
+def compare_url(number_id):
+    sql = "SELECT number FROM documents WHERE number='" + number_id + "'"
     db = pymysql.connect(
         host='localhost',
         user='root',
@@ -213,7 +209,3 @@ def compare_url(number):
     cursor.execute(sql)
     result = cursor.fetchall()
     return result
-
-
-if __name__ == '__main__':
-    get_all_doc()

@@ -3,13 +3,13 @@
 # 初始化数据库
 # 全局搜索，按标题、序号、作者、时间搜索数据库并返回相关的信息
 
-from flask import request, flash, render_template, g, redirect, url_for
-import spider
+from flask import request, flash, render_template
 import pymysql
 from flask import Flask
 import time
 import datetime
 from forms import IndexForm
+from spider.muti_spider import msg
 
 # from pymysql.constants import CLIENT
 # from db import get_db
@@ -26,30 +26,22 @@ app.config.from_mapping(
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = IndexForm()
-    i = False  # 反馈爬虫执行情况
     if request.method == 'POST':
         # 整个是用来判断执行哪一个语句
-        F = False  # 反馈数据库执行情况
 
         if form.start.data:  # 表单
-            F = spider.get_msg()
-            i = True
+            msg()
         if form.stop_start.data:
             sched_start(stop=True)
             flash('已停止自动爬取')
+
         if form.sched_start.data:  # 表单
             hour = request.form['hour']
             minute = request.form['minute']
             if hour and minute:
-                F = sched_start(h=int(hour), m=int(minute))
+                sched_start(h=int(hour), m=int(minute))
             else:
-                F = sched_start()
-            i = True
-
-        if i:
-            flash('爬取完成')
-        if F:
-            flash('数据写入失败!')
+                sched_start()
 
         if form.init_db.data:  # 表单
             try:
@@ -153,8 +145,7 @@ def sched_start(h=None, m=None,stop=False):
 
         if time.mktime(now.timetuple()) > time.mktime(sched_time.timetuple()):
             sched_time += datetime.timedelta(days=1)
-            F = spider.get_msg()  # 执行爬虫
-            return F
+            msg()  # 执行爬虫
 
         time.sleep(600)  # 每10分钟检测一次
 
