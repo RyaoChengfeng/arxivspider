@@ -10,6 +10,7 @@ from flask import Flask
 import time
 import datetime
 from forms import IndexForm
+import asyncio
 
 # from pymysql.constants import CLIENT
 # from db import get_db
@@ -32,7 +33,7 @@ def index():
         F = False  # 反馈数据库执行情况
 
         if form.start.data:  # 表单
-            F = spider.get_msg()
+            asyncio.run(spider.get_msg())
             i = True
         if form.stop_start.data:
             sched_start(stop=True)
@@ -141,7 +142,7 @@ def init_db():
 
 
 # 定时爬取,可设置时和分
-def sched_start(h=None, m=None,stop=False):
+def sched_start(h=None, m=None, stop=False):
     while True:
         if stop:
             break

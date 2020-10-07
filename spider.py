@@ -7,12 +7,15 @@
 
 
 import re
-import requests
 import os
 from bs4 import BeautifulSoup
 import random
 import pymysql
 import asyncio
+import threading
+import time
+from aiohttp_requests import requests
+import aiofiles
 
 # import hashlib
 # from requests.adapters import HTTPAdapter
@@ -67,12 +70,12 @@ headers = {'User-Agent': random.choice(user_agent)}
 
 
 # 获取每个论文代号
-def get_number():
+async def get_number():
     # for year in years:
     year = '20'
     url_arvix0 = "https://arxiv.org/list/cs.AI/" + year
-    page0 = requests.get(url_arvix0, headers=headers)
-    html0 = page0.text
+    page0 = await requests.get(url_arvix0, headers=headers)
+    html0 = await page0.text()
     total0 = re.compile(r'total of (.*?) entries:')
     total = re.findall(total0, html0)[0]
     print(total)
@@ -81,8 +84,8 @@ def get_number():
     for _ in range((int(total) // 2000) + 1):  # 爬取该年份的所有论文
         url_arvix = "https://arxiv.org/list/cs.AI/" + year + "?skip=" + str(start) + "&show=2000"
         start += 2000
-        page = requests.get(url_arvix, headers=headers)
-        html = page.text
+        page = await requests.get(url_arvix, headers=headers)
+        html = await page.text()
         r_number = re.compile(r'<a href="/abs/(.*?)" title="Abstract">')
         r_number_list0 = re.findall(r_number, html)
         r_number_list += r_number_list0
@@ -93,8 +96,8 @@ def get_number():
 # 进入论文内部爬取
 # ps:表示首页不会显示时间信息，要爬就要进论文里面。但这样一来花的时间就大大增加了，原谅我目前没时间看分布式爬虫
 
-def get_msg():
-    r_number_list = get_number()
+async def get_msg():
+    r_number_list = await get_number()
     db = pymysql.connect(
         host='localhost',
         user='root',
@@ -106,7 +109,8 @@ def get_msg():
     for number in r_number_list:
 
         # 判断是否爬过链接
-        if compare_url(number):
+        f = await compare_url(number)
+        if f:
             print('论文 arXiv:' + number + '已存在')
             continue
 
@@ -115,7 +119,7 @@ def get_msg():
         i = 0
         while i < 3:
             try:
-                doc = requests.get(url_doc, headers=headers, timeout=5)  # 设置超时
+                doc = await requests.get(url_doc, headers=headers, timeout=5)  # 设置超时
             except requests.exceptions.RequestException as e:
                 i += 1
                 print('重试 %s' % url_doc)
@@ -159,48 +163,47 @@ def get_msg():
         # 下载地址
         url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
 
-        # 插入数据库
-        F = False
+        # 插入数据
         sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES('" + \
               r_title + "','" + number_id + "','" + authors + "','" + r_time + "','" + sbj + "','" + url_pdf + "');"
         try:
             cursor.execute(sql)
             db.commit()
+            print('插入成功')
         except Exception as e:
             print('数据写入失败!', e)
             db.rollback()
             F = True
     db.close()
-    return F
 
 
 # 下载功能
-def download_all_pdf(url, number):
-    pdf_file = requests.get(url, headers=headers, stream=True)
+async def download_all_pdf(url, number):
+    pdf_file = await requests.get(url, headers=headers, stream=True)
     # stream=True保持流的开启,直到流的关闭
     file_dir = 'Artificial Intelligence'
     pdf_name = number + '.pdf'
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     fileroute = os.path.join(file_dir, pdf_name)
-    with open(fileroute, 'wb') as f:
+    with aiofiles.open(fileroute, 'wb') as f:
         for chunk in pdf_file.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
 
 
 # 下载各论文到Artificial Intelligence
-def get_all_doc():
-    r_number_list = get_number()
+async def get_all_doc():
+    r_number_list = await get_number()
     for number in r_number_list:
         url_pdf = "https://arxiv.org/pdf/" + number + '.pdf'
         print('开始下载论文：arXiv:%s' % number)
-        download_all_pdf(url_pdf, number)
+        await download_all_pdf(url_pdf, number)
 
 
 # 判断url是否之前被爬取过
 # 观察到无论上传几次，论文id都不会变，所以没必要用哈希来解析内，容
-def compare_url(number):
+async def compare_url(number):
     sql = "SELECT number FROM documents WHERE number='" + number + "'"
     db = pymysql.connect(
         host='localhost',
@@ -216,4 +219,5 @@ def compare_url(number):
 
 
 if __name__ == '__main__':
-    get_all_doc()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(get_msg())

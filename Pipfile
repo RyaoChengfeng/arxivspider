@@ -16,6 +16,8 @@ flask-sqlalchemy = "*"
 flask-script = "*"
 retrying = "*"
 aiohttp = "*"
+aiohttp-requests = "*"
+aiofiles = "*"
 
 [requires]
 python_version = "3.8"
