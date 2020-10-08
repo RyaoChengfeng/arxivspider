@@ -16,12 +16,12 @@ def get_ip_list(url, headers):
     ip_list = []
     page = requests.get(url, headers=headers)
     soup = BeautifulSoup(page.text, 'lxml')
-    url_list = soup.find_all('tr', limit=20)
+    url_list = soup.find_all('tr')
     print(len(url_list))
     for i in range(2, len(url_list)):
         line = url_list[i].find_all('td')
-        ip = line[1].text
-        port = line[2].text
+        ip = line[0].text
+        port = line[1].text
         address = ip + ':' + port
         ip_list.append(address)
     return ip_list
@@ -29,6 +29,7 @@ def get_ip_list(url, headers):
 
 # 得到一个proxies
 def get_ip(url, headers):
-    agent_id = random.choice(get_ip_list(url, headers))
-    proxies = get_proxy(agent_id)
+    agent_ip = random.choice(get_ip_list(url, headers))
+    proxies = get_proxy(agent_ip)
+    print(proxies)
     return proxies

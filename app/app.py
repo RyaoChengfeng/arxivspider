@@ -2,14 +2,16 @@
 # 开始爬虫
 # 初始化数据库
 # 全局搜索，按标题、序号、作者、时间搜索数据库并返回相关的信息
+# 开始定时爬取、关闭定时爬取
 
-from flask import request, flash, render_template
+
+from flask import request, flash, render_template, redirect
 import pymysql
 from flask import Flask
 import time
 import datetime
-from forms import IndexForm
-from spider.muti_spider import msg
+from forms import IndexForm, DownloadForm
+from spiders import muti_spider
 
 # from pymysql.constants import CLIENT
 # from db import get_db
@@ -30,17 +32,32 @@ def index():
         # 整个是用来判断执行哪一个语句
 
         if form.start.data:  # 表单
-            msg()
+            try:
+                muti_spider.msg()
+            except Exception as e:
+                flash('大概是ip被禁了~~')
+                print(e)
+
         if form.stop_start.data:
             sched_start(stop=True)
             flash('已停止自动爬取')
 
+        # 定时
         if form.sched_start.data:  # 表单
-            hour = request.form['hour']
-            minute = request.form['minute']
-            if hour and minute:
-                sched_start(h=int(hour), m=int(minute))
+            hour = form.hour.data
+            minute = form.minute.data
+            form.hour.data = ''
+            form.minute.data = ''
+            if hour and minute:  # 如果输入了小时和分钟
+                if form.validate():  # 判断格式合理
+                    print('时间设置成功')
+                    print('定时开始')
+                    print('每天 %s 时 %s 分将开始爬取数据' % (hour, minute))
+                    sched_start(h=int(hour), m=int(minute))
+                else:
+                    flash('请输入正确的时间格式！')
             else:
+                print('自动爬取开始')
                 sched_start()
 
         if form.init_db.data:  # 表单
@@ -55,11 +72,12 @@ def index():
     return render_template('index.html', form=form)
 
 
-# 索引
+# 索引和下载
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     results = []
     if request.method == 'POST':
+        # 判断类型
         key = request.form['key']
         key_words = request.form['key_words']
         key_numbers = request.form['key_numbers']
@@ -75,19 +93,19 @@ def search():
         cursor = db.cursor()
         sql = ''
         if key:
-            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(
+            sql = "SELECT title,number,author,subject,url_pdf FROM documents WHERE CONCAT(title,number,author,time) LIKE '%" + str(
                 key) + "%';"
         if key_words:
-            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE title LIKE '%" + str(
+            sql = "SELECT title,number,author,subject,url_pdf FROM documents WHERE title LIKE '%" + str(
                 key_words.lower().title()) + "%';"
         if key_numbers:
-            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE number LIKE '%" + str(
+            sql = "SELECT title,number,author,subject,url_pdf FROM documents WHERE number LIKE '%" + str(
                 key_numbers) + "%';"
         if key_time:
-            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE time LIKE '%" + str(
+            sql = "SELECT title,number,author,subject,url_pdf FROM documents WHERE time LIKE '%" + str(
                 key_time) + "%';"
         if key_author:
-            sql = "SELECT title,number,time,author,subject,url_pdf FROM documents WHERE author LIKE '%" + str(
+            sql = "SELECT title,number,author,subject,url_pdf FROM documents WHERE author LIKE '%" + str(
                 key_author) + "%';"
         if sql:
             cursor.execute(sql)
@@ -99,6 +117,19 @@ def search():
             flash('请输入关键字！')
         db.close()
     return render_template('search.html', results=results)
+
+
+# 下载接口
+@app.route('/download', methods=['GET', 'POST'])
+def download():
+    form = DownloadForm()
+    if request.method == 'POST':
+        number = form.number.data
+        print(number)
+        form.number.data = ''
+        flash('为您提供下载论文 arXiv: %s的链接' % number)
+        return redirect('http://81.68.250.220/download/' + number + '.pdf')
+    return render_template('download.html', form=form)
 
 
 #  初始化数据库
@@ -113,11 +144,12 @@ def init_db():
     cursor = db.cursor()
     try:
         sql1 = 'DROP TABLE IF EXISTS documents;'
+        # 有的论文标题太长、有的作者太多
         sql2 = """CREATE TABLE documents(
             id INTEGER PRIMARY KEY AUTO_INCREMENT,
-            title VARCHAR(255) NOT NULL ,
+            title VARCHAR(500) NOT NULL ,
             number VARCHAR(255) NOT NULL ,
-            author VARCHAR(255) NOT NULL ,
+            author VARCHAR(1000) NOT NULL , 
             time VARCHAR(255) NOT NULL ,
             subject VARCHAR(255) NOT NULL ,
             url_pdf VARCHAR(255)
@@ -133,7 +165,7 @@ def init_db():
 
 
 # 定时爬取,可设置时和分
-def sched_start(h=None, m=None,stop=False):
+def sched_start(h=None, m=None, stop=False):
     while True:
         if stop:
             break
@@ -145,7 +177,7 @@ def sched_start(h=None, m=None,stop=False):
 
         if time.mktime(now.timetuple()) > time.mktime(sched_time.timetuple()):
             sched_time += datetime.timedelta(days=1)
-            msg()  # 执行爬虫
+            muti_spider.msg()  # 执行爬虫
 
         time.sleep(600)  # 每10分钟检测一次
 

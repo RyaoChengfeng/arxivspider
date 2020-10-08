@@ -1,9 +1,11 @@
 # 功能：
 # 爬取arvix论文的标题、序号、作者、时间、分类、下载链接
 # 下载arivx论文
-# 爬虫定时爬取
 # 爬虫增量爬取
+# 爬虫定时爬取
 # 超时重试、跳过
+# 实现代理（未使用）
+# 实现多进程（本来使用协程，debug搞了3、4个小时、代码结构改了又改还未解决，故而放弃）
 
 
 import re
@@ -12,16 +14,15 @@ import os
 from bs4 import BeautifulSoup
 import random
 import pymysql
-from spider.agent_ip import get_ip
 
-# import hashlib
-# from requests.adapters import HTTPAdapter
+# from spiders import agent_ip
+
 
 # 如果爬全部的论文就加上循环结构
 years = ['20', '19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '09', '08', '07', '06', '05', '04', '03',
          '02', '01', '00', '99', '98', '97', '96', '95', '94', '93']
 
-agent_url = 'http://www.66ip.cn/'
+# agent_url = 'http://www.66ip.cn/'
 
 user_agent = [
     "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
@@ -67,7 +68,8 @@ user_agent = [
 
 headers = {'User-Agent': random.choice(user_agent)}
 
-proxies = get_ip(agent_url, headers=headers)
+
+# proxies = agent_ip.get_ip(agent_url, headers=headers)
 
 
 # 获取每个论文代号
@@ -146,12 +148,18 @@ def get_msg(number):
         authors = ''
         for author in author_list:
             author = author.string
+            i = True
+            while i:  # 有的人名字有两个单引号，故而用循环
+                if "'" in author:
+                    author = author.replace("'", '"')  # 防止作者名字中有单引号
+                else:
+                    i = False
             if author == author_list[0].string:
                 authors = author
             else:
                 authors = authors + ',' + author
-        # 论文时间
-        r_time0 = re.compile(r'Submitted on (.*?)]')
+        # 论文时间(之前读入数据库时的部分时间，由于正则没写好，所有多次提交的论文时间都出现了信息冗余)
+        r_time0 = re.compile(r'Submitted on ([ A-Za-z0-9]*)')
         r_time = re.findall(r_time0, doc)[0]
         # 论文类别
         sbj = soup.find_all('span', class_='primary-subject')[0]
@@ -161,7 +169,7 @@ def get_msg(number):
 
         # 插入数据库
         sql = "INSERT INTO documents(title,number,author,time,subject,url_pdf) VALUES('" + \
-              r_title + "','" + number_id + "','" + authors + "','" + r_time + "','" + sbj + "','" + url_pdf + "');"
+              r_title + "','" + number_id + "','" + authors + "','" + r_time + "','" + sbj + "','" + url_pdf + "');"  # 处理单引号
         try:
             cursor.execute(sql)
             db.commit()
@@ -169,7 +177,6 @@ def get_msg(number):
         except Exception as e:
             print('数据写入失败!', e)
             db.rollback()
-    db.close()
 
 
 # 下载功能
@@ -207,5 +214,5 @@ def compare_url(number_id):
     )
     cursor = db.cursor()
     cursor.execute(sql)
-    result = cursor.fetchall()
+    result = cursor.fetchone()
     return result
