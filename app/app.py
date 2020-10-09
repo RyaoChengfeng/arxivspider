@@ -43,17 +43,20 @@ def index():
             flash('已停止自动爬取')
 
         # 定时
-        if form.sched_start.data:  # 表单
+        if form.sched_start.data:  # 表单  # 判断格式合理
             hour = form.hour.data
             minute = form.minute.data
+            print(hour, minute)
             form.hour.data = ''
             form.minute.data = ''
-            if hour and minute:  # 如果输入了小时和分钟
-                if form.validate():  # 判断格式合理
+            if hour and minute:
+                hour = int(hour)
+                minute = int(minute)
+                if 0 <= hour <= 23 and 0 <= minute <= 59:
                     print('时间设置成功')
                     print('定时开始')
                     print('每天 %s 时 %s 分将开始爬取数据' % (hour, minute))
-                    sched_start(h=int(hour), m=int(minute))
+                    sched_start(h=hour, m=minute)
                 else:
                     flash('请输入正确的时间格式！')
             else:

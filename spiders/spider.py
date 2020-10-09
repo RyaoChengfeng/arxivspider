@@ -149,15 +149,18 @@ def get_msg(number):
         for author in author_list:
             author = author.string
             i = True
-            while i:  # 有的人名字有两个单引号，故而用循环
+            while i:  # 防止有的人名字有两个单引号，故而用循环
                 if "'" in author:
-                    author = author.replace("'", '"')  # 防止作者名字中有单引号
+                    author = author.replace("'", "''")  # 防止作者名字中有单引号
                 else:
                     i = False
             if author == author_list[0].string:
                 authors = author
             else:
                 authors = authors + ',' + author
+        if authors[0] == ',':  # 由于把单引号变成双引号后作者名字发生了改变
+            authors = authors[1:]
+
         # 论文时间(之前读入数据库时的部分时间，由于正则没写好，所有多次提交的论文时间都出现了信息冗余)
         r_time0 = re.compile(r'Submitted on ([ A-Za-z0-9]*)')
         r_time = re.findall(r_time0, doc)[0]

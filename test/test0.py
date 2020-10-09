@@ -51,7 +51,7 @@ user_agent = [
 
 headers = {'User-Agent': random.choice(user_agent)}
 
-number = '2001.00846'
+number = '2001.00805'
 # 论文序号
 number_id = 'arXiv:' + number
 
@@ -100,13 +100,15 @@ for author in author_list:
     i = True
     while i:  # 有的人名字有两个单引号，故而用循环
         if "'" in author:
-            author = author.replace("'", '"')  # 防止作者名字中有单引号
+            author = author.replace("'", "''")  # 防止作者名字中有单引号
         else:
             i = False
     if author == author_list[0].string:
         authors = author
     else:
         authors = authors + ',' + author
+if authors[0] == ',':
+    authors = authors[1:]
 # 论文时间
 r_time0 = re.compile(r'Submitted on ([ A-Za-z0-9]*)')
 r_time = re.findall(r_time0, doc)[0]
